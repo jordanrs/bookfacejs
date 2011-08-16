@@ -2,7 +2,7 @@
 
 	Usage:
 
-		const FB_APP_ID = 1234567890;
+		var FB_APP_ID = 1234567890;
 		var fbapp = null;
 
 		window.fbAsyncInit = function() {
@@ -12,6 +12,7 @@
 		    status : true, // check login status
 		    cookie : true, // enable cookies to allow the server to access the session
 		    xfbml  : true  // parse XFBML
+				channelUrl: (window.location.protocol + "//" + HOSTNAME + "/fbchannel.html")
 		  });
 
 			// init app once fb sdk is loaded
@@ -44,8 +45,6 @@ if(!com.betapond) com.betapond = {};
 com.betapond.fbapp = function(options){
 	this.login = {};
 	this.perms_needed = options.perms || [];
-	this.perms_given = [];
-	this.perms_not_given = [];
 	this.callbacks = {
 		perms_given: function(perms){},
 		perms_not_given: function(perms){}
@@ -55,46 +54,53 @@ com.betapond.fbapp = function(options){
 com.betapond.fbapp.prototype = {
 	
 	init: function(callback){
-		var _fbapp = this;
+		var _t = this;
 		FB.getLoginStatus(function(response){
-			_fbapp.login = response;
-			callback(_fbapp);
-		},true);
+			console.debug('getLoginStatus', response);
+			_t.login = response;
+			_t.connected(); //take this out!
+			callback(_t);
+		},false);
 	},
 	
 	connect: function(onsuccess, onfailure){
-		var _fbapp = this;
+		var _t = this;
 		FB.login(function(response) {
-			_fbapp.login = response;
-			_fbapp.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
+			_t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
 		}, {perms:this.perms_needed.join(',')});
 	
-		// modal ui doesn't bloody work. Thank's Facebook. Thacebook.
-		//FB.ui({method:'auth.login',display:'iframe',scope:this.perms_needed}, function(response){_t.init(response)});
 	},
 	
 	after_connect: function(response, callbacks){
-		if(this.connected()){
-			var _fbapp = this;
+		if(response.session != undefined){
+			var _t = this;
 			if(this.perms_needed.length > 0){
-			  this.verify_permissions(function(perms_given){callbacks.onsuccess(_fbapp, perms_given);}, function(perms_not_given){callbacks.onfailure(_fbapp, _fbapp.perms_given, perms_not_given);});
+			  this.verify_permissions(function(perms_given){callbacks.onsuccess(_t, perms_given);}, function(perms_not_given){callbacks.onfailure(_t, _t.perms_given, perms_not_given);});
 		  }
 		  else{
-				callbacks.onsuccess(_fbapp, this.perms_given);
+				callbacks.onsuccess(_t, this.perms_given);
 			}
 		}
 		else{
-			if(callbacks.onfailure)callbacks.onfailure(_fbapp, _fbapp.perms_given);
+			if(callbacks.onfailure) callbacks.onfailure(_t, _t.perms_given);
 		}
 	},
 
 	connected: function(){
-		return (this.login.session != undefined);
-	},
-
-
-	permitted: function(){
-		return (this.perms_given.length == this.perms_needed.length);
+		if(this.login.session == undefined){
+			return false;
+		}
+		else{
+			var status = true;
+			var perms_given = this.perms_given();
+			for(var i in this.perms_needed){
+				if(perms_given.indexOf(this.perms_needed[i]) == -1){
+					status = false;
+					break;
+				}
+			}
+			return status;
+		}
 	},
 	
 	while_connected: function(callback){
@@ -106,48 +112,35 @@ com.betapond.fbapp.prototype = {
 		}
 	},
 
-
-	// calls on_given(this.perms_given) if all permissions are verified.
-	// if any perms are missing, on_not_given(this.perms_not_given) is called
 	verify_permissions: function(onsuccess, onfailure){
-	  this.perms_given = [];
-		this.perms_not_given = [];
-		var _fbapp = this;
-		var query = FB.Data.query('select uid, {0} from permissions where uid = {1}',this.perms_needed.join(','), this.login.session.uid);
-		query.wait(function(rows){_fbapp._update_permissions(rows, onsuccess, onfailure);});
+		var _t = this;
+		FB.getLoginStatus(function(response){
+			_t.login = response;
+			if (_t.connected()){
+				if(onsuccess != undefined) onsuccess();
+				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given(), _t.perms_needed);
+			}
+			else{
+				if(onfailure != undefined) onfailure();
+				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given(), _t.perms_needed);
+			}
+		},true);
 	},
 
-	_update_permissions: function(rows, onsuccess, onfailure){
-		if(rows.length == 0)
-		{
-			// not_given = this.perms_needed
-			this.perms_not_given = this.perms_needed;
-			if(on_not_given) on_not_given(this.perms_not_given);
-		}
-		else
-		{
-			var row = rows[0];
-			for(var i in this.perms_needed)
-			{
-				var perm = this.perms_needed[i];
-				if(row[perm] == "1")
-				{
-			    this.perms_given.push(perm);
-				}
-				else
-				{
-					this.perms_not_given.push(perm);
-				}
+	perms_given: function(){
+		var perms_given = [];
+		var perms = this._get_perms();
+		for(var key in perms){
+			for(var i in perms[key]){
+				perms_given.push(perms[key][i]);
 			}
 		}
-		// callbacks
-		if(this.perms_given.length == this.perms_needed.length){
-			if(onsuccess) onsuccess(this.perms_given);
-			if(this.callbacks.perms_given) this.callbacks.perms_given(this.perms_given);
-		}
-		if(this.perms_not_given.length > 0){
-			if(onfailure) onfailure(this.perms_not_given);
-			if(this.callbacks.perms_not_given) this.callbacks.perms_not_given(this.perms_not_given);
-		}
+		console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
+		return perms_given;
+	},
+	
+ 	_get_perms: function(){
+		return eval( '(' + this.login.perms + ')' );
 	}
+	
 };
