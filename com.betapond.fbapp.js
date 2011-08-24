@@ -58,7 +58,6 @@ com.betapond.fbapp.prototype = {
 		FB.getLoginStatus(function(response){
 			console.debug('getLoginStatus', response);
 			_t.login = response;
-			_t.connected(); //take this out!
 			callback(_t);
 		},false);
 	},
@@ -135,7 +134,7 @@ com.betapond.fbapp.prototype = {
 				perms_given.push(perms[key][i]);
 			}
 		}
-		console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
+		//console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
 		return perms_given;
 	},
 	
@@ -144,3 +143,15 @@ com.betapond.fbapp.prototype = {
 	}
 	
 };
+
+// Stoopid IE!
+if(!Array.indexOf){
+ Array.prototype.indexOf = function(obj){
+  for(var i=0; i<this.length; i++){
+   if(this[i]==obj){
+    return i;
+   }
+  }
+  return -1;
+ };
+}
