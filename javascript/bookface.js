@@ -61,7 +61,14 @@ com.betapond.bookface.prototype = {
 		}
 	},
 	
-	while_connected: function(callback){
+	while_connected: function(callback, options){
+		if(options !== undefined && options.include_permissions !== undefined){
+			for(var i in options.include_permissions){
+				if(this.perms_needed.indexOf(options.include_permissions[i]) == -1){
+					this.perms_needed.push(options.include_permissions[i]);
+				}
+			}
+		}
 		if(!this.connected()){
 			this.connect(function(){ callback(); });
 		}

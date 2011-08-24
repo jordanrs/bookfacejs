@@ -10,7 +10,7 @@
 	    status : true, // check login status
 	    cookie : true, // enable cookies to allow the server to access the session
 	    xfbml  : true  // parse XFBML
-			channelUrl: (window.location.protocol + "//" + HOSTNAME + "/fbchannel.html")
+      channelUrl: (window.location.protocol + "//" + HOSTNAME + "/fbchannel.html")
 	  });
 
 		// init app once fb sdk is loaded
