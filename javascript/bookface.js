@@ -15,7 +15,7 @@ com.betapond.bookface.prototype = {
 	init: function(callback){
 		var _t = this;
 		FB.getLoginStatus(function(response){
-			console.debug('getLoginStatus', response);
+			//console.debug('getLoginStatus', response);
 			_t.login = response;
 			callback(_t);
 		},false);
