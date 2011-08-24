@@ -1,7 +1,7 @@
 #Usage
 ```
 	var FB_APP_ID = 1234567890;
-	var fbapp = null;
+	var Bookface = null;
 
 	window.fbAsyncInit = function() {
 
@@ -14,10 +14,10 @@
 	  });
 
 		// init app once fb sdk is loaded
-		fbapp = new com.betapond.fbapp({perms: ['email','offline_access']});
-		fbapp.init(function(){ init_app(); });
+		Bookface = new com.betapond.bookface({perms: ['email','offline_access']});
+		Bookface.init(function(){ init_app(); });
 
-	  FB.Canvas.setAutoResize();
+	  // FB.Canvas.setAutoResize();
 	};
 
 	$(document).ready(function(){ 
@@ -30,7 +30,7 @@
 	function init_app(){
 	  // initialize your application code here knowing that FB JS SDK is initialized
 	  // and also fbapp is initialised and has checked session status
-		fbapp.while_connected(function(){
+		Bookface.while_connected(function(){
 			//do stuff in here that you want to ensure you have permission to do
 		});
 	}
