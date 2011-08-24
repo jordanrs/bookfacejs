@@ -14,7 +14,7 @@
 	  });
 
 		// init app once fb sdk is loaded
-		Bookface = new com.betapond.bookface({perms: ['email','offline_access']});
+		Bookface = new com.betapond.bookface({perms: ['email']});
 		Bookface.init(function(){ init_app(); });
 
 	  // FB.Canvas.setAutoResize();
@@ -32,6 +32,6 @@
 	  // and also fbapp is initialised and has checked session status
 		Bookface.while_connected(function(){
 			//do stuff in here that you want to ensure you have permission to do
-		});
+		}, {include_permissions: ["publish_stream"]});
 	}
 ```
