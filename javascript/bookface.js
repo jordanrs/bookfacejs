@@ -107,7 +107,7 @@ com.betapond.bookface.prototype = {
 				perms_given.push(perms[key][i]);
 			}
 		}
-		console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
+		//console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
 		return perms_given;
 	},
 	
@@ -115,7 +115,7 @@ com.betapond.bookface.prototype = {
 		return eval( '(' + this.login.perms + ')' );
 	},
 	
-	likes_page: function(page_id, on_liked, on_not_liked)
+	page_liked: function(page_id, on_liked, on_not_liked)
 	{
 		var _t = this;
 		FB.api('/me/likes/' + page_id,
