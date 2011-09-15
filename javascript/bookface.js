@@ -33,7 +33,14 @@ com.betapond.bookface.prototype = {
 		if(response.session != undefined){
 			var _t = this;
 			if(this.perms_needed.length > 0){
-			  this.verify_permissions(function(perms_given){callbacks.onsuccess(_t, perms_given);}, function(perms_not_given){callbacks.onfailure(_t, _t.perms_given, perms_not_given);});
+			  this.verify_permissions(
+					function(perms_given){
+						callbacks.onsuccess(_t, perms_given);
+					},
+					function(perms_not_given){
+						if(callbacks.onfailure !== undefined) callbacks.onfailure(_t, _t.perms_given, perms_not_given);
+					}
+				);
 		  }
 		  else{
 				callbacks.onsuccess(_t, this.perms_given);
@@ -133,8 +140,8 @@ com.betapond.bookface.prototype = {
 	
 	// Stoopid IE!
 	_indexOf: function(array, obj){
-		for(var i=0; i<this.length; i++){
-	   if(this[i]==obj){
+		for(var i=0; i<array.length; i++){
+	   if(array[i]==obj){
 	    return i;
 	   }
 	  }
