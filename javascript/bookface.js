@@ -52,7 +52,7 @@ com.betapond.bookface.prototype = {
 			var status = true;
 			var perms_given = this.perms_given();
 			for(var i in this.perms_needed){
-				if(perms_given.indexOf(this.perms_needed[i]) == -1){
+				if(this._indexOf(perms_given, this.perms_needed[i]) == -1){
 					status = false;
 					break;
 				}
@@ -64,7 +64,7 @@ com.betapond.bookface.prototype = {
 	while_connected: function(callback, options){
 		if(options !== undefined && options.include_permissions !== undefined){
 			for(var i in options.include_permissions){
-				if(this.perms_needed.indexOf(options.include_permissions[i]) == -1){
+				if(this._indexOf(this.perms_needed, options.include_permissions[i]) == -1){
 					this.perms_needed.push(options.include_permissions[i]);
 				}
 			}
@@ -100,24 +100,45 @@ com.betapond.bookface.prototype = {
 				perms_given.push(perms[key][i]);
 			}
 		}
-		//console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
+		console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
 		return perms_given;
 	},
 	
  	_get_perms: function(){
 		return eval( '(' + this.login.perms + ')' );
+	},
+	
+	likes_page: function(page_id, on_liked, on_not_liked)
+	{
+		var _t = this;
+		FB.api('/me/likes/' + page_id,
+			function(response){
+				if(response.data.length > 0 && response.data[0].id == page_id){
+					on_liked();
+				}
+				else{
+					if(on_not_liked !== undefined){
+						on_not_liked();
+						FB.Event.subscribe('edge.create', function(response) {
+							if(('http://www.facebook.com/profile.php?id=' + page_id) === response){
+								FB.Event.unsubscribe('edge.create', function(res){});
+								on_liked();
+							}
+						});
+					}
+				}
+			}
+		);
+	},
+	
+	// Stoopid IE!
+	_indexOf: function(array, obj){
+		for(var i=0; i<this.length; i++){
+	   if(this[i]==obj){
+	    return i;
+	   }
+	  }
+	  return -1;
 	}
 	
 };
-
-// Stoopid IE!
-if(!Array.indexOf){
- Array.prototype.indexOf = function(obj){
-  for(var i=0; i<this.length; i++){
-   if(this[i]==obj){
-    return i;
-   }
-  }
-  return -1;
- };
-}
