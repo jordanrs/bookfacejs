@@ -1,7 +1,6 @@
 if(!com) var com = {};
 if(!com.betapond) com.betapond = {};
 
-
 com.betapond.bookface = function(options){
 	this.login = {};
 	this.perms_needed = options.perms || [];
