@@ -43,6 +43,7 @@ com.betapond.bookface.prototype = {
 				);
 		  }
 		  else{
+				_t.login = response;
 				callbacks.onsuccess(_t, this.perms_given);
 			}
 		}
@@ -69,12 +70,16 @@ com.betapond.bookface.prototype = {
 	},
 	
 	while_connected: function(callback, options){
-		if(options !== undefined && options.include_permissions !== undefined){
-			for(var i in options.include_permissions){
-				if(this._indexOf(this.perms_needed, options.include_permissions[i]) == -1){
-					this.perms_needed.push(options.include_permissions[i]);
+		if(options !== undefined){
+			if(options.include_permissions !== undefined){
+				for(var i in options.include_permissions){
+					if(this._indexOf(this.perms_needed, options.include_permissions[i]) == -1){
+						this.perms_needed.push(options.include_permissions[i]);
+					}
 				}
 			}
+			
+			if(options.with_permissions !== undefined) this.perms_needed = options.with_permissions;
 		}
 		if(!this.connected()){
 			this.connect(function(){ callback(); });
@@ -107,7 +112,6 @@ com.betapond.bookface.prototype = {
 				perms_given.push(perms[key][i]);
 			}
 		}
-		//console.debug('perms_given', perms_given, 'perms_needed', this.perms_needed);
 		return perms_given;
 	},
 	
