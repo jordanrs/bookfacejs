@@ -4,6 +4,7 @@ if(!com.betapond) com.betapond = {};
 com.betapond.bookface = function(options){
 	this.login = {};
 	this.perms_needed = options.perms || [];
+	this.perms_given = [];
 	this.callbacks = {
 		perms_given: function(perms){},
 		perms_not_given: function(perms){}
@@ -25,13 +26,15 @@ com.betapond.bookface.prototype = {
 		var _t = this;
 		FB.login(function(response) {
 			_t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
-		}, {perms:this.perms_needed.join(',')});
+		}, {scope:this.perms_needed.join(',')});
 	
 	},
 	
 	after_connect: function(response, callbacks){
-		if(response.session != undefined){
+		if(response.authResponse != undefined){
 			var _t = this;
+			this.auth = response.authResponse;
+			this.map_oauth2_session_to_legacy_session(response);
 			if(this.perms_needed.length > 0){
 			  this.verify_permissions(
 					function(perms_given){
@@ -43,7 +46,6 @@ com.betapond.bookface.prototype = {
 				);
 		  }
 		  else{
-				_t.login = response;
 				callbacks.onsuccess(_t, this.perms_given);
 			}
 		}
@@ -51,16 +53,25 @@ com.betapond.bookface.prototype = {
 			if(callbacks.onfailure) callbacks.onfailure(_t, _t.perms_given);
 		}
 	},
+	
+	map_oauth2_session_to_legacy_session: function(response){
+	  this.login = {
+	    session:{
+	      uid: response.authResponse.userID,
+	      access_token: response.authResponse.accessToken,
+	      expires: response.authResponse.expiresIn
+	    }
+	  }
+	},
 
 	connected: function(){
-		if(this.login.session == undefined){
+		if(this.auth == undefined){
 			return false;
 		}
 		else{
 			var status = true;
-			var perms_given = this.perms_given();
 			for(var i in this.perms_needed){
-				if(this._indexOf(perms_given, this.perms_needed[i]) == -1){
+				if(this._indexOf(this.perms_given, this.perms_needed[i]) == -1){
 					status = false;
 					break;
 				}
@@ -91,32 +102,18 @@ com.betapond.bookface.prototype = {
 
 	verify_permissions: function(onsuccess, onfailure){
 		var _t = this;
-		FB.getLoginStatus(function(response){
-			_t.login = response;
+		FB.api('/me/permissions', function(response){
+		  _t.perms_given = [];
+		  for(var perm in response.data[0]) _t.perms_given.push(perm);
 			if (_t.connected()){
 				if(onsuccess != undefined) onsuccess();
-				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given(), _t.perms_needed);
+				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given, _t.perms_needed);
 			}
 			else{
 				if(onfailure != undefined) onfailure();
-				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given(), _t.perms_needed);
+				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given, _t.perms_needed);
 			}
-		},true);
-	},
-
-	perms_given: function(){
-		var perms_given = [];
-		var perms = this._get_perms();
-		for(var key in perms){
-			for(var i in perms[key]){
-				perms_given.push(perms[key][i]);
-			}
-		}
-		return perms_given;
-	},
-	
- 	_get_perms: function(){
-		return eval( '(' + this.login.perms + ')' );
+		});
 	},
 	
 	page_liked: function(page_id, on_liked, on_not_liked)

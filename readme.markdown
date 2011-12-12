@@ -38,6 +38,16 @@
 ##Session Information
 
 ```
+var user_id = Bookface.auth.userID;
+var access_token = Bookface.auth.accessToken;
+```
+
+##Legacy apps still work.
+
+I have mapped the authResponse fields back to ```Bookface.login.session``` so that older apps based can be updated painlessly. But don't use the ```Bookface.login``` object any more, consider this your 90 day deprecation warning!
+
+```
+// these still work.
 var user_id = Bookface.login.session.uid;
 var access_token = Bookface.login.session.access_token;
 ```
