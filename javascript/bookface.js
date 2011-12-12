@@ -17,7 +17,8 @@ com.betapond.bookface.prototype = {
 		var _t = this;
 		FB.getLoginStatus(function(response){
 			//console.debug('getLoginStatus', response);
-			_t.login = response;
+			_t.auth = response.authResponse;
+			_t.map_oauth2_session_to_legacy_session(response);
 			callback(_t);
 		},false);
 	},
