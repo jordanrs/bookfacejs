@@ -56,6 +56,7 @@ com.betapond.bookface.prototype = {
 	},
 	
 	map_oauth2_session_to_legacy_session: function(response){
+	  if(response.authResponse == undefined) return;
 	  this.login = {
 	    session:{
 	      uid: response.authResponse.userID,
