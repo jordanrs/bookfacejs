@@ -23,6 +23,18 @@ com.betapond.bookface.prototype = {
 		},false);
 	},
 	
+	login_status: function(){
+	  return this.auth;
+	},
+	
+	access_token: function(){
+	  return this.auth.accessToken;
+	},
+	
+	uid: function(){
+	  return this.auth.userID;
+	},
+	
 	connect: function(onsuccess, onfailure){
 		var _t = this;
 		FB.login(function(response) {
