@@ -23,6 +23,14 @@ com.betapond.bookface.prototype = {
 		},false);
 	},
 	
+	access_token: function(){
+	  return this.auth.accessToken;
+	},
+	
+	uid: function(){
+	  return this.auth.userID;
+	},
+	
 	connect: function(onsuccess, onfailure){
 		var _t = this;
 		FB.login(function(response) {
@@ -66,18 +74,22 @@ com.betapond.bookface.prototype = {
 	  }
 	},
 
-	connected: function(){
+	connected: function(verify_permissions){
+	  // force validate_permissions to be boolean
+	  verify_permissions = !!verify_permissions; 
 		if(this.auth == undefined){
 			return false;
 		}
 		else{
 			var status = true;
-			for(var i in this.perms_needed){
-				if(this._indexOf(this.perms_given, this.perms_needed[i]) == -1){
-					status = false;
-					break;
-				}
-			}
+			if(verify_permissions){
+			  for(var i in this.perms_needed){
+  				if(this._indexOf(this.perms_given, this.perms_needed[i]) == -1){
+  					status = false;
+  					break;
+  				}
+  			}
+  		}
 			return status;
 		}
 	},
