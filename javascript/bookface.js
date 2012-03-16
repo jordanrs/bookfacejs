@@ -2,24 +2,21 @@ if(!com) var com = {};
 if(!com.betapond) com.betapond = {};
 
 com.betapond.bookface = function(options){
-	this.login = {};
-	this.perms_needed = options.perms || [];
+	this.auth = null;
+	var defaults = {scope: []};
+	this.options = this._extend({}, defaults, options);
+	this.perms_needed = options.scope;
 	this.perms_given = [];
-	this.callbacks = {
-		perms_given: function(perms){},
-		perms_not_given: function(perms){}
-	};
+	this.perms_missing = [];
 };
 
 com.betapond.bookface.prototype = {
-	
+
 	init: function(callback){
 		var _t = this;
 		FB.getLoginStatus(function(response){
-			//console.debug('getLoginStatus', response);
 			_t.auth = response.authResponse;
-			_t.map_oauth2_session_to_legacy_session(response);
-			callback(_t);
+			callback && callback.apply(_t);
 		},false);
 	},
 	
@@ -35,47 +32,31 @@ com.betapond.bookface.prototype = {
 	  return this.auth.userID;
 	},
 	
-	connect: function(onsuccess, onfailure){
+	connect: function(onsuccess, onfailure, options){
 		var _t = this;
+		if(typeof onfailure == "object") options = onfailure; //allow connect(onsuccess, options)
+		
+		var defaults = {scope: this.perms_needed};
+		var config = this._extend({}, defaults, options);
+		//console.log("Bookface.connect", config.scope);
 		FB.login(function(response) {
 			_t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
-		}, {scope:this.perms_needed.join(',')});
-	
+		}, {scope: config.scope.join(",")});
 	},
 	
 	after_connect: function(response, callbacks){
 		if(response.authResponse != undefined){
-			var _t = this;
 			this.auth = response.authResponse;
-			this.map_oauth2_session_to_legacy_session(response);
 			if(this.perms_needed.length > 0){
-			  this.verify_permissions(
-					function(perms_given){
-						callbacks.onsuccess(_t, perms_given);
-					},
-					function(perms_not_given){
-						if(callbacks.onfailure !== undefined) callbacks.onfailure(_t, _t.perms_given, perms_not_given);
-					}
-				);
+			  this.verify_permissions(callbacks.onsuccess, callbacks.onfailure)
 		  }
 		  else{
-				callbacks.onsuccess(_t, this.perms_given);
+				callbacks.onsuccess && callbacks.onsuccess.apply(this);
 			}
 		}
 		else{
-			if(callbacks.onfailure) callbacks.onfailure(_t, _t.perms_given);
+			callbacks.onfailure && callbacks.onfailure.apply(this, [{type: 'login_error', response: response}]);
 		}
-	},
-	
-	map_oauth2_session_to_legacy_session: function(response){
-	  if(response.authResponse == undefined) return;
-	  this.login = {
-	    session:{
-	      uid: response.authResponse.userID,
-	      access_token: response.authResponse.accessToken,
-	      expires: response.authResponse.expiresIn
-	    }
-	  }
 	},
 
 	connected: function(){
@@ -84,49 +65,36 @@ com.betapond.bookface.prototype = {
 		}
 		else{
 			var status = true;
+			this.perms_missing = [];
 			for(var i in this.perms_needed){
 				if(this._indexOf(this.perms_given, this.perms_needed[i]) == -1){
-					status = false;
-					break;
+					this.perms_missing.push(this.perms_needed[i]);
 				}
 			}
-			return status;
+			return (this.perms_missing.length == 0);
 		}
 	},
 	
-	while_connected: function(callback, options){
-		if(options !== undefined){
-			if(options.include_permissions !== undefined){
-				for(var i in options.include_permissions){
-					if(this._indexOf(this.perms_needed, options.include_permissions[i]) == -1){
-						this.perms_needed.push(options.include_permissions[i]);
-					}
-				}
-			}
-			
-			if(options.with_permissions !== undefined) this.perms_needed = options.with_permissions;
-		}
-		if(!this.connected()){
-			this.connect(function(){ callback(); });
-		}
-		else{
-			callback();
-		}
+	while_connected: function(onsuccess, onfailure, options){
+		this.connected() ? onsuccess.apply(this) : this.connect(onsuccess, onfailure, options);
 	},
 
 	verify_permissions: function(onsuccess, onfailure){
 		var _t = this;
 		FB.api('/me/permissions', function(response){
 		  _t.perms_given = [];
-		  for(var perm in response.data[0]) _t.perms_given.push(perm);
-			if (_t.connected()){
-				if(onsuccess != undefined) onsuccess();
-				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given, _t.perms_needed);
-			}
-			else{
-				if(onfailure != undefined) onfailure();
-				if(_t.callbacks.perms_given) _t.callbacks.perms_given(_t.perms_given, _t.perms_needed);
-			}
+		  if(response.error){
+		    onfailure && onfailure.apply(_t, [{type: 'verify_permissions_error', response: response}]);
+		  }
+		  else{
+  		  for(var perm in response.data[0]) _t.perms_given.push(perm);
+  			if (_t.connected()){
+  				onsuccess && onsuccess.apply(_t);
+  			}
+  			else{
+  				onfailure && onfailure.apply(_t, [{type: 'incomplete_permissions_error', perms_missing: _t.perms_missing}]);
+  			}
+  		}
 		});
 	},
 	
@@ -153,7 +121,7 @@ com.betapond.bookface.prototype = {
 		);
 	},
 	
-	// Stoopid IE!
+	// support methods... mostly copied in from underscore.js
 	_indexOf: function(array, obj){
 		for(var i=0; i<array.length; i++){
 	   if(array[i]==obj){
@@ -161,6 +129,13 @@ com.betapond.bookface.prototype = {
 	   }
 	  }
 	  return -1;
-	}
+	},
 	
+	_extend: function (obj, source) {
+    for (var prop in source) {
+      obj[prop] = source[prop];
+    }
+    return obj;
+  }
+
 };

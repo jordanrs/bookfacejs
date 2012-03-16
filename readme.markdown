@@ -14,7 +14,7 @@
 	  });
 
 		// init app once fb sdk is loaded
-		Bookface = new com.betapond.bookface({perms: ['email']});
+		Bookface = new com.betapond.bookface({});
 		Bookface.init(function(){ init_app(); });
 
 	  // FB.Canvas.setAutoResize();
@@ -26,31 +26,32 @@
 	  e.async = true;
 	  document.getElementById('fb-root').appendChild(e);
 	});
+	
+	function when_connected(){
+	  
+	}
+	
+	function when_not_connected(error){
+	  
+	}
 
 	function init_app(){
 	  // initialize your application code here knowing that FB JS SDK is initialized
 	  // and also fbapp is initialised and has checked session status
-		Bookface.while_connected(function(){
-			//do stuff in here that you want to ensure you have permission to do
-		}, {include_permissions: ["publish_stream"]});
+		Bookface.while_connected(when_connected, when_not_connected, {scope: ["publish_actions","email"]});
+	  // you can optionally leave out the when_not_connected callback
+	  // but I wouldn't recommend it
+	  Bookface.while_connected(when_connected, {scope: ["publish_actions","email"]});
 	}
 ```
 ##Session Information
 
 ```
-var user_id = Bookface.auth.userID;
-var access_token = Bookface.auth.accessToken;
+var auth_response = Bookface.login_status();
+var user_id = Bookface.uid();
+var access_token = Bookface.access_token();
 ```
 
-##Legacy apps still work.
-
-I have mapped the authResponse fields back to ```Bookface.login.session``` so that older apps based can be updated painlessly. But don't use the ```Bookface.login``` object any more, consider this your 90 day deprecation warning!
-
-```
-// these still work.
-var user_id = Bookface.login.session.uid;
-var access_token = Bookface.login.session.access_token;
-```
 
 ##Check if a page is liked
 Note: You will need user_likes permission for this.
