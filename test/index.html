@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bookface.js</title>
+    <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script src="../javascript/bookface.js"></script>
+    <script src="tests.js"></script>
+    <script>
+      var Settings = {
+        app_id: '190854884359332',
+        permissions: ['user_likes', 'publish_actions']
+      };
+      
+      window.fbAsyncInit = function() {
+    	 FB.init({
+    	    appId  : Settings.app_id,
+    	    status : true, // check login status
+    	    cookie : true, // enable cookies to allow the server to access the session
+    	    xfbml  : true,  // parse XFBML
+          channelUrl: (window.location.protocol + "//" + window.location.host + "/channel.html")
+    	  });
+        
+    		// init app once fb sdk is loaded
+    		Bookface.init(Tests.init, {scope: Settings.permissions});
+    	}
+    		
+      $(document).ready(function(){
+        var js, d = document; id = 'facebook-jssdk'; if (d.getElementById(id)) {return;}
+        js = d.createElement('script'); js.id = id; js.async = true;
+        js.src = "//connect.facebook.net/en_US/all.js";
+        d.getElementsByTagName('head')[0].appendChild(js);
+      });
+    </script>
+  </head>
+  <body>
+    <div id="fb-root"></div>
+    <h1>Bookface Test</h1>
+    <button id="connect">Test</button>
+  </body>
+</html>

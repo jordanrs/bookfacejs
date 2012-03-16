@@ -1,12 +1,15 @@
 #Usage
+
 ```
-	var FB_APP_ID = 1234567890;
-	var Bookface = null;
+	var Settings = {
+	  app_id: '12345678910',
+	  permissions: ["publish_actions","email"]
+	};
 
 	window.fbAsyncInit = function() {
 
 	 FB.init({
-	    appId  : FB_APP_ID,
+	    appId  : Settings.app_id,
 	    status : true, // check login status
 	    cookie : true, // enable cookies to allow the server to access the session
 	    xfbml  : true,  // parse XFBML
@@ -14,36 +17,18 @@
 	  });
 
 		// init app once fb sdk is loaded
-		Bookface = new com.betapond.bookface({});
-		Bookface.init(function(){ init_app(); });
-
-	  // FB.Canvas.setAutoResize();
+		Bookface.init( function(){ MyApp.init() });
 	};
-
-	$(document).ready(function(){ 
-	  var e = document.createElement('script');
-	  e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js?v=1';
-	  e.async = true;
-	  document.getElementById('fb-root').appendChild(e);
-	});
 	
-	function when_connected(){
-	  
-	}
+	$(document).ready(function(){
+  	$('a#connect').bind('click', function(){
+  	  Bookface.while_connected(function(){ alert(this.uid()) }, {scope:Settings.permissions});
+  	});
+  });
 	
-	function when_not_connected(error){
-	  
-	}
 
-	function init_app(){
-	  // initialize your application code here knowing that FB JS SDK is initialized
-	  // and also fbapp is initialised and has checked session status
-		Bookface.while_connected(when_connected, when_not_connected, {scope: ["publish_actions","email"]});
-	  // you can optionally leave out the when_not_connected callback
-	  // but I wouldn't recommend it
-	  Bookface.while_connected(when_connected, {scope: ["publish_actions","email"]});
-	}
 ```
+
 ##Session Information
 
 ```
