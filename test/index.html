@@ -12,18 +12,18 @@
       };
       
       window.fbAsyncInit = function() {
-    	 FB.init({
-    	    appId  : Settings.app_id,
-    	    status : true, // check login status
-    	    cookie : true, // enable cookies to allow the server to access the session
-    	    xfbml  : true,  // parse XFBML
+       FB.init({
+          appId  : Settings.app_id,
+          status : true, // check login status
+          cookie : true, // enable cookies to allow the server to access the session
+          xfbml  : true,  // parse XFBML
           channelUrl: (window.location.protocol + "//" + window.location.host + "/channel.html")
-    	  });
+        });
         
-    		// init app once fb sdk is loaded
-    		Bookface.init(Tests.init, {scope: Settings.permissions});
-    	}
-    		
+        // init app once fb sdk is loaded
+        Bookface.init(Tests.init, {scope: Settings.permissions});
+      }
+        
       $(document).ready(function(){
         var js, d = document; id = 'facebook-jssdk'; if (d.getElementById(id)) {return;}
         js = d.createElement('script'); js.id = id; js.async = true;
