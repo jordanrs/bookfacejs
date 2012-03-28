@@ -19,8 +19,16 @@ window.Bookface = (function(){
     return obj;
   }
   
-  // public methods
   return {
+
+    // **Public:** Initialises Bookface and checks the users login status
+    //
+    // - callback: (required) fired when getLoginStatus returns
+    // - options: a hash of options
+    // 
+    //   **Examples**
+    // 
+    //   `Bookface.init(MyApp.init, {scope:['email','publish_actions']});`
     init: function(callback, options){
       var _t = this;
       extend(base_config, options);
@@ -31,20 +39,38 @@ window.Bookface = (function(){
   		},false);
     },
     
+    // **Public:** returns the Facebook `authResponse` fetched during `Bookface.init`
   	login_status: function(){
   	  return auth;
   	},
-
+    
+    // **Public:** returns the current user's Facebook access_token for this app.
   	access_token: function(){
   	  return auth.accessToken;
   	},
-
+    
+    // **Public:** returns the current user's Facebook user id.
   	uid: function(){
   	  return auth.userID;
   	},
   	
+  	// **Public:** returns an object describing the permissions needed, given and missing for this app
   	permissions: permissions,
 
+    // **Public:** Triggers a Facebook OAuth Login Dialog
+    //
+    // - onsuccess: (required) fired when permissions are succesfully obtained
+    // - onfailure: (optional, recommended) fired when permissions are not succesfully obtained
+    // - options: a hash of options
+    //
+    //   **Examples**
+    // 
+    //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')}, {scope:['email','publish_actions']});`
+    //
+    //   if you specified scope during `Bookface.init` then you don't need that here
+    //   note that if you do pass a scope here, it will override whatever scope you defined during `Bookface.init` for the duration of this `connect`
+    //
+    //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')});`
   	connect: function(onsuccess, onfailure, options){
   		var _t = this;
   		if(typeof onfailure == "object") options = onfailure; //allow connect(onsuccess, options)
@@ -55,7 +81,9 @@ window.Bookface = (function(){
   			_t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
   		}, {scope: config.scope.join(",")});
   	},
-
+    
+    // never call this directly
+    // it just stands in as the FB.login callback and enacts the permissions verification workflow
   	after_connect: function(response, callbacks){
   		if(response.authResponse != undefined){
   			auth = response.authResponse;
@@ -71,6 +99,9 @@ window.Bookface = (function(){
   		}
   	},
 
+    // Checks to see if the user is currently connected/authenticated
+    // leave this one to Bookface to use internally
+    // **returns** `true` or `false`
   	connected: function(){
   		if(auth == undefined){
   			return false;
@@ -87,10 +118,27 @@ window.Bookface = (function(){
   		}
   	},
 
+    // **Public:** May trigger a Facebook oAuth Login Dialog depending
+    //
+    //  Just the same as `Bookface.connect` except that it will execute `onsuccess` immediately if `Bookface.connected()` returns `true`
+    //
+    // - onsuccess: (required) fired when permissions are succesfully obtained
+    // - onfailure: (optional, recommended) fired when permissions are not succesfully obtained
+    // - options: a hash of options
+    //
+    //   **Examples**
+    // 
+    //   `Bookface.while_connected(function(){alert('Yay!')}, function(){alert('Aw noes!')}, {scope:['email','publish_actions']});`
+    //
+    //   if you specified scope during `Bookface.init` then you don't need that here
+    //   note that if you do pass a scope here, it will override whatever scope you defined during `Bookface.init` for the duration of this `connect`
+    //
+    //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')});`
   	while_connected: function(onsuccess, onfailure, options){
   		this.connected() ? onsuccess.apply(this) : this.connect(onsuccess, onfailure, options);
   	},
 
+    // checks permissions after connecting
   	verify_permissions: function(onsuccess, onfailure){
   		var _t = this;
   		FB.api('/me/permissions', function(response){
@@ -110,6 +158,20 @@ window.Bookface = (function(){
   		});
   	},
 
+
+    // **Public:** Checks to see if the current user likes a page
+    //
+    //  Note you need to have the user_likes permission for this one
+    //  If you don't already like the page, the method subscribes to the edge.create event
+    //  we currenly only get a callback for that event if you use the XFBML Like Button
+    //
+    // - page_id: (required) the id of the page you're checking
+    // - likes: (required) a callback executed if the page is liked
+    // - no_likey (required recommended): a callback executed if the page is not liked 
+    //
+    //   **Examples**
+    // 
+    //   `Bookface.page_liked('123456789102', function(){alert('Hey Mikey I think he likes it!');}, function(){ alert('Why you no like?'); } );`
   	page_liked: function(page_id, likes, no_likey){
   		var _t = this;
   		FB.api('/me/likes/' + page_id,
