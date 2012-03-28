@@ -2,7 +2,7 @@
 
 A handy wrapper for the things we do all the time with the FB JSSDK. Mainly, the permissions workflow.
 
-For full source docs, see here [http://betapond.github.com/bookfacejs](http://betapond.github.com/bookfacejs)
+For full, annoted source docs, see `doc/bookface.html`
 
 ##Usage Example
 
