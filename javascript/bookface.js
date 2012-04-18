@@ -21,8 +21,12 @@ window.Bookface = (function(){
     return -1;
   }
 
-  function extend(obj, source) {
-    for (var prop in source) obj[prop] = source[prop];
+  function extend() {
+    var obj = arguments[0];
+    for(var i = 1; i < arguments.length; i++){
+      var source = arguments[i];
+      for (var prop in source) obj[prop] = source[prop];
+    }
     return obj;
   }
   
