@@ -11,7 +11,8 @@ window.Bookface = (function(){
   var auth = null,
   defaults = {scope: []},
   base_config = {},
-  permissions = { needed: [], given: [], missing: [] };  
+  permissions = { state: 'not_loaded', needed: [], given: [], missing: [] },
+  self
   
   //private methods
   function indexOf(array, obj){
@@ -41,12 +42,13 @@ window.Bookface = (function(){
     // 
     //   `Bookface.init(MyApp.init, {scope:['email','publish_actions']});`
     init: function(callback, options){
-      var _t = this;
+      self = this;
       extend(base_config, options);
       permissions.needed = base_config.scope || [];
       FB.getLoginStatus(function(response){
         auth = response.authResponse;
-        callback && callback.apply(_t);
+        if(auth) self.load_permissions();
+        callback && callback.apply(self);
       },false);
     },
     
@@ -83,13 +85,12 @@ window.Bookface = (function(){
     //
     //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')});`
     connect: function(onsuccess, onfailure, options){
-      var _t = this;
       if(typeof onfailure == "object") options = onfailure; //allow connect(onsuccess, options)
 
       var defaults = {scope: base_config.scope};
       var config = extend({}, defaults, options);
       FB.login(function(response) {
-        _t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
+        self.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
       }, {scope: config.scope.join(",")});
     },
     
@@ -148,27 +149,34 @@ window.Bookface = (function(){
     while_connected: function(onsuccess, onfailure, options){
       this.connected() ? onsuccess.apply(this) : this.connect(onsuccess, onfailure, options);
     },
-
-    // checks permissions after connecting
-    verify_permissions: function(onsuccess, onfailure){
-      var _t = this;
+    
+    // don't use this directly
+    load_permissions: function(onsuccess, onfailure){
       FB.api('/me/permissions', function(response){
         permissions.given = [];
         if(response.error){
-          onfailure && onfailure.apply(_t, [{type: 'verify_permissions_error', response: response}]);
+          permissions.state = 'load_error';
+          onfailure && onfailure.apply(self, [{type: 'permissions_load_error', response: response}]);
         }
         else{
           for(var perm in response.data[0]) permissions.given.push(perm);
-          if (_t.connected()){
-            onsuccess && onsuccess.apply(_t);
-          }
-          else{
-            onfailure && onfailure.apply(_t, [{type: 'incomplete_permissions_error', permissions: permissions}]);
-          }
+          permissions.state = 'loaded';
+          onsuccess && onsuccess.apply(self);
         }
       });
     },
 
+    // checks permissions after connecting
+    verify_permissions: function(onsuccess, onfailure){
+      this.load_permissions(function(){
+        if (this.connected()){
+          onsuccess && onsuccess.apply(this);
+        }
+        else{
+          onfailure && onfailure.apply(this, [{type: 'incomplete_permissions_error', permissions: permissions}]);
+        }
+      }, onfailure);
+    },
 
     // **Public:** Checks to see if the current user likes a page
     //
@@ -184,11 +192,10 @@ window.Bookface = (function(){
     // 
     //   `Bookface.page_liked('123456789102', function(){alert('Hey Mikey I think he likes it!');}, function(){ alert('Why you no like?'); } );`
     page_liked: function(page_id, likes, no_likey){
-      var _t = this;
       FB.api('/me/likes/' + page_id,
         function(response){
           if(response.data.length > 0 && response.data[0].id == page_id){
-            likes && likes.apply(_t, [page_id]);
+            likes && likes.apply(self, [page_id]);
           }
           else{
             if(no_likey){
@@ -196,7 +203,7 @@ window.Bookface = (function(){
               FB.Event.subscribe('edge.create', function(response) {
                 if(('http://www.facebook.com/profile.php?id=' + page_id) === response){
                   FB.Event.unsubscribe('edge.create', function(res){});
-                  likes && likes.apply(_t, [page_id]);
+                  likes && likes.apply(self, [page_id]);
                 }
               });
             }
