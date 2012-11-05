@@ -83,7 +83,7 @@ window.Bookface = (function(){
       if(typeof onfailure == "object") options = onfailure; //allow connect(onsuccess, options)
 
       var defaults = {scope: base_config.scope};
-      var config = extend({}, defaults, options);
+      var config = extend(defaults, options);
       FB.login(function(response) {
         _t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
       }, {scope: config.scope.join(",")});
