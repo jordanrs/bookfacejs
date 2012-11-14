@@ -23,12 +23,17 @@ For full, annoted source docs, see `doc/bookface.html`
     });
 
     // init app once fb sdk is loaded
-    Bookface.init( function(){ MyApp.init() });
+    // you can pass scope to init, this defines a default set of permissions
+    Bookface.init( function(){ MyApp.init() }, {scope: Settings.permissions});
   };
   
   $(document).ready(function(){
-    $('a#connect').bind('click', function(){
-      Bookface.while_connected(function(){ alert(this.uid()) }, {scope:Settings.permissions});
+    $('a#connect').on('click', function(){
+      Bookface.connect(function(){ console.log(Bookface.permissions); });
+    });
+
+    $('a#upload_photo').on('click', function(){
+      Bookface.connect(function(){ console.log(Bookface.permissions); }, {scope: ['user_photos']});
     });
   });
   
