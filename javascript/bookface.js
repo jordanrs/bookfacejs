@@ -10,9 +10,8 @@ window.Bookface = (function(){
   // private vars
   var auth = null,
   defaults = {scope: []},
-  base_config = {},
   permissions = { state: 'not_loaded', needed: [], given: [], missing: [] },
-  self
+  self;
   
   //private methods
   function indexOf(array, obj){
@@ -30,6 +29,12 @@ window.Bookface = (function(){
     }
     return obj;
   }
+
+  function apply_callback(callback, args){
+    if(callback && typeof callback == 'function'){
+      callback.apply(self, args || []);
+    }
+  }
   
   return {
 
@@ -37,18 +42,17 @@ window.Bookface = (function(){
     //
     // - callback: (required) fired when getLoginStatus returns
     // - options: a hash of options
-    // 
+    //
     //   **Examples**
-    // 
+    //
     //   `Bookface.init(MyApp.init, {scope:['email','publish_actions']});`
     init: function(callback, options){
       self = this;
-      extend(base_config, options);
-      permissions.needed = base_config.scope || [];
+      permissions.needed = options.scope || [];
       FB.getLoginStatus(function(response){
         auth = response.authResponse;
         if(auth) self.load_permissions();
-        callback && callback.apply(self);
+        apply_callback(callback);
       },false);
     },
     
@@ -77,7 +81,7 @@ window.Bookface = (function(){
     // - options: a hash of options
     //
     //   **Examples**
-    // 
+    //
     //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')}, {scope:['email','publish_actions']});`
     //
     //   if you specified scope during `Bookface.init` then you don't need that here
@@ -85,29 +89,41 @@ window.Bookface = (function(){
     //
     //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')});`
     connect: function(onsuccess, onfailure, options){
+      var _t = this;
       if(typeof onfailure == "object") options = onfailure; //allow connect(onsuccess, options)
 
-      var defaults = {scope: base_config.scope};
-      var config = extend(defaults, options);
-      FB.login(function(response) {
-        self.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
-      }, {scope: config.scope.join(",")});
+      // update permissions needed
+      permissions.needed = permissions.needed.concat(options.scope || []);
+      delete options.scope;
+      
+      var config = extend({}, options);
+
+      // only trigger the login dialog if it is necessary
+      if(!this.connected()){
+        FB.login(function(response) {
+          _t.after_connect(response, {onsuccess: onsuccess, onfailure: onfailure});
+        }, {scope: permissions.needed.join(",")});
+      }
+      else{
+        // fire success callback right away if we are already connected
+        apply_callback(onsuccess);
+      }
     },
     
     // never call this directly
     // it just stands in as the FB.login callback and enacts the permissions verification workflow
     after_connect: function(response, callbacks){
-      if(response.authResponse != undefined){
+      if(response.authResponse !== undefined){
         auth = response.authResponse;
         if(permissions.needed.length > 0){
           this.verify_permissions(callbacks.onsuccess, callbacks.onfailure);
         }
         else{
-          callbacks.onsuccess && callbacks.onsuccess.apply(this);
+          apply_callback(callbacks.onsuccess);
         }
       }
       else{
-        callbacks.onfailure && callbacks.onfailure.apply(this, [{type: 'login_error', response: response}]);
+        apply_callback(callbacks.onfailure, [{type: 'login_error', response: response}]);
       }
     },
 
@@ -115,7 +131,7 @@ window.Bookface = (function(){
     // leave this one to Bookface to use internally
     // **returns** `true` or `false`
     connected: function(){
-      if(auth == undefined){
+      if(auth === undefined){
         return false;
       }
       else{
@@ -126,28 +142,18 @@ window.Bookface = (function(){
             permissions.missing.push(permissions.needed[i]);
           }
         }
-        return (permissions.missing.length == 0);
+        return permissions.missing.length === 0;
       }
     },
 
-    // **Public:** May trigger a Facebook oAuth Login Dialog depending
+    // **DEPRECATED:** May trigger a Facebook oAuth Login Dialog depending
     //
-    //  Just the same as `Bookface.connect` except that it will execute `onsuccess` immediately if `Bookface.connected()` returns `true`
+    // The logic for Bookface.connect() and Bookface.while_connected() has been merged
     //
-    // - onsuccess: (required) fired when permissions are succesfully obtained
-    // - onfailure: (optional, recommended) fired when permissions are not succesfully obtained
-    // - options: a hash of options
     //
-    //   **Examples**
-    // 
-    //   `Bookface.while_connected(function(){alert('Yay!')}, function(){alert('Aw noes!')}, {scope:['email','publish_actions']});`
-    //
-    //   if you specified scope during `Bookface.init` then you don't need that here
-    //   note that if you do pass a scope here, it will override whatever scope you defined during `Bookface.init` for the duration of this `connect`
-    //
-    //   `Bookface.connect(function(){alert('Yay!')}, function(){alert('Aw noes!')});`
     while_connected: function(onsuccess, onfailure, options){
-      this.connected() ? onsuccess.apply(this) : this.connect(onsuccess, onfailure, options);
+      console.log('Bookface.while_connected() is now deprecated and will be removed in the future. Please use Bookface.connect() instead.');
+      this.connect(onsuccess, onfailure, options);
     },
     
     // don't use this directly
@@ -156,12 +162,12 @@ window.Bookface = (function(){
         permissions.given = [];
         if(response.error){
           permissions.state = 'load_error';
-          onfailure && onfailure.apply(self, [{type: 'permissions_load_error', response: response}]);
+          apply_callback(onfailure, [{type: 'permissions_load_error', response: response}]);
         }
         else{
           for(var perm in response.data[0]) permissions.given.push(perm);
           permissions.state = 'loaded';
-          onsuccess && onsuccess.apply(self);
+          apply_callback(onsuccess);
         }
       });
     },
@@ -170,10 +176,10 @@ window.Bookface = (function(){
     verify_permissions: function(onsuccess, onfailure){
       this.load_permissions(function(){
         if (this.connected()){
-          onsuccess && onsuccess.apply(this);
+          apply_callback(onsuccess);
         }
         else{
-          onfailure && onfailure.apply(this, [{type: 'incomplete_permissions_error', permissions: permissions}]);
+          apply_callback(onfailure, [{type: 'incomplete_permissions_error', permissions: permissions}]);
         }
       }, onfailure);
     },
@@ -186,24 +192,24 @@ window.Bookface = (function(){
     //
     // - page_id: (required) the id of the page you're checking
     // - likes: (required) a callback executed if the page is liked
-    // - no_likey (required recommended): a callback executed if the page is not liked 
+    // - no_likey (required recommended): a callback executed if the page is not liked
     //
     //   **Examples**
-    // 
+    //
     //   `Bookface.page_liked('123456789102', function(){alert('Hey Mikey I think he likes it!');}, function(){ alert('Why you no like?'); } );`
     page_liked: function(page_id, likes, no_likey){
       FB.api('/me/likes/' + page_id,
         function(response){
           if(response.data.length > 0 && response.data[0].id == page_id){
-            likes && likes.apply(self, [page_id]);
+            apply_callback(likes, [page_id]);
           }
           else{
-            if(no_likey){
-              no_likey.apply(this, [page_id]);
+            if(typeof no_likey == 'function'){
+              apply_callback(no_likey, [page_id]);
               FB.Event.subscribe('edge.create', function(response) {
                 if(('http://www.facebook.com/profile.php?id=' + page_id) === response){
                   FB.Event.unsubscribe('edge.create', function(res){});
-                  likes && likes.apply(self, [page_id]);
+                  apply_callback(likes, [page_id]);
                 }
               });
             }
