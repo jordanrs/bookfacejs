@@ -137,7 +137,7 @@ window.Bookface = (function(){
       else{
         var status = true;
         permissions.missing = [];
-        for(var i in permissions.needed){
+        for(var i = 0; i < permissions.needed.length; i++){
           if(indexOf(permissions.given, permissions.needed[i]) == -1){
             permissions.missing.push(permissions.needed[i]);
           }
