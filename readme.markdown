@@ -26,7 +26,7 @@ For full, annoted source docs, see `doc/bookface.html`
     // you can pass scope to init, this defines a default set of permissions
     Bookface.init( function(){ MyApp.init() }, {scope: Settings.permissions});
   };
-  
+    
   $(document).ready(function(){
     $('a#connect').on('click', function(){
       Bookface.connect(function(){ initalized });
