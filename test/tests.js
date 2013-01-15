@@ -2,7 +2,13 @@ var Tests = {
   init: function(){
 
     function success(){
-      alert('Success!');
+      
+      var bq = Bookface.batchQuery();
+      bq.addQuery('GET', '/me');
+      bq.addQuery('GET', '/3616968');
+      bq.send(function(response){
+        console.log(response);
+      })
     }
     
     function failed(error){
@@ -11,8 +17,9 @@ var Tests = {
     }
     
     $('#connect').bind('click', function(){
-      Bookface.while_connected(success, failed, {scope:Settings.permissions});
+      Bookface.connect(success, failed, {scope:Settings.permissions});
     });
     
   }
 };
+

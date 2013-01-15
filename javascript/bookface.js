@@ -35,7 +35,7 @@ window.Bookface = (function(){
       callback.apply(self, args || []);
     }
   }
-  
+    
   return {
 
     // **Public:** Initialises Bookface and checks the users login status
@@ -216,6 +216,48 @@ window.Bookface = (function(){
           }
         }
       );
+    },
+    
+    // **Public:** wraps up facebooks batch querying into something a bit cleaner to use
+    // basic usage demo 
+    // var bq = Bookface.batchQuery();
+    // bq.addQuery('GET', '/me');
+    // bq.addQuery('GET', '/3616968');
+    // bq.send(function(response){
+    //   console.log(response, black);
+    // })
+    batchQuery : function() {
+      var searchArgs = {
+        access_token: auth.accesstoken,
+        batch: []
+      };
+      return {    
+        // addQuery: function(Request type 'GET'/'POST' etc, relativeUrl to facebook '/me', {additional options object}) 
+        // the additional options object can take any of the additional params facebook accpets
+        // for a batch query 
+        // eg {name : 'appFriendLoveActions', omit_response_on_success: false}); as used for
+        // dependant batch queries https://developers.facebook.com/docs/reference/api/batch/
+        addQuery: function(method, relativeUrl) {
+          var query = {};
+          query.method = method;
+          query.relative_url = relativeUrl;
+
+          // check for optional args and add them to the 
+          var args = Array.prototype.slice.call(arguments, 2);
+          if ( !! args && args.length == 1) {
+            for (var key in args[0]) {
+              if (args[0].hasOwnProperty(key)) {
+                query[key] = args[0][key];
+              }
+            }
+          }
+
+          searchArgs.batch.push(query)
+        },
+        send: function(callback) {
+          FB.api('/', 'POST', searchArgs, callback)
+        }
+      };
     }
   }; // end of public methods
     
