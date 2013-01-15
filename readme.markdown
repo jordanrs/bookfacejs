@@ -36,17 +36,17 @@ For full, annoted source docs, see `doc/bookface.html`
       Bookface.connect(function(){ initalized }, {scope: ['user_photos']});
     });
 
-		function initalized(){
-			console.log(Bookface.permissions); 
-			var bq = Bookface.batchQuery();
+    function initalized(){
+      console.log(Bookface.permissions); 
+      var bq = Bookface.batchQuery();
       bq.addQuery('GET', '/me');
       bq.addQuery('GET', '/3616968');
       bq.send(function(response){
         console.log(response);
       })
-		};
+    };
   });
   
-	// using fb batch batch quering
+  // using fb batch batch quering
 
 ```
